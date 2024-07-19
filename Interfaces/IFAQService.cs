@@ -18,11 +18,11 @@ namespace ProjectName.Interfaces
         Task<string> CreateFAQ(CreateFAQDto createFAQDto);
 
         /// <summary>
-        /// Retrieves a specific FAQ entry based on the provided request data.
+        /// Retrieves a detailed FAQ entry based on the provided request.
         /// </summary>
-        /// <param name="faqRequestDto">The data transfer object containing the request parameters to retrieve the FAQ entry.</param>
-        /// <returns>An FAQ object representing the retrieved FAQ entry.</returns>
-        Task<FAQ> GetFAQ(FAQRequestDto faqRequestDto);
+        /// <param name="faqRequestDto">The data transfer object containing the request parameters to fetch the FAQ entry.</param>
+        /// <returns>An FAQ object containing the detailed information of the requested FAQ entry.</returns>
+        Task<FAQ> GetFAQSuper(FAQRequestDto faqRequestDto);
 
         /// <summary>
         /// Updates an existing FAQ entry.
@@ -32,17 +32,17 @@ namespace ProjectName.Interfaces
         Task<string> UpdateFAQ(UpdateFAQDto updateFAQDto);
 
         /// <summary>
-        /// Deletes a specific FAQ entry based on the provided request data.
+        /// Deletes an FAQ entry.
         /// </summary>
-        /// <param name="deleteFAQDto">The data transfer object containing the request parameters to delete the FAQ entry.</param>
-        /// <returns>A boolean indicating whether the FAQ entry was successfully deleted.</returns>
+        /// <param name="deleteFAQDto">The data transfer object containing the information necessary to delete the FAQ entry.</param>
+        /// <returns>A boolean indicating whether the deletion was successful.</returns>
         Task<bool> DeleteFAQ(DeleteFAQDto deleteFAQDto);
 
         /// <summary>
-        /// Retrieves a list of FAQ entries based on the provided request data.
+        /// Retrieves a list of FAQ entries based on the provided request.
         /// </summary>
-        /// <param name="listFAQRequestDto">The data transfer object containing the request parameters to retrieve the list of FAQ entries.</param>
-        /// <returns>A list of FAQ objects representing the retrieved FAQ entries.</returns>
+        /// <param name="listFAQRequestDto">The data transfer object containing the request parameters to fetch the list of FAQ entries.</param>
+        /// <returns>A list of FAQ objects containing the information of the requested FAQ entries.</returns>
         Task<List<FAQ>> GetListFAQ(ListFAQRequestDto listFAQRequestDto);
     }
 }
