@@ -1,5 +1,5 @@
-
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 using Dapper;
@@ -18,36 +18,109 @@ namespace ProjectName.Services
             _dbConnection = dbConnection;
         }
 
-        public async Task<string> CreateFAQCategory(CreateFAQCategoryDto request)
+        public async Task<string> CreateFAQCategory(CreateFAQCategoryDto dto)
         {
-            // Step 1: Validate that the request payload contains the necessary parameter ("Name").
-            if (string.IsNullOrEmpty(request.Name))
+            ValidateCreateFAQCategoryDto(dto);
+
+            const string sql = @"
+                INSERT INTO FAQCategory (Id, Name, Description)
+                VALUES (@Id, @Name, @Description);
+            ";
+
+            var id = Guid.NewGuid();
+            await _dbConnection.ExecuteAsync(sql, new { Id = id, dto.Name, dto.Description });
+
+            return id.ToString();
+        }
+
+        public async Task<FAQCategory> GetFAQCategory(FAQCategoryRequestDto dto)
+        {
+            const string sql = @"
+                SELECT Id, Name, Description
+                FROM FAQCategory
+                WHERE Id = @Id;
+            ";
+
+            var result = await _dbConnection.QuerySingleOrDefaultAsync<FAQCategory>(sql, new { dto.Id });
+            if (result == null)
             {
-                // Step 2: If "Name" is null, return response with response.exception = new DP-422 exception.
-                throw new BusinessException("DP-422", "Client Error");
+                throw new BusinessException("DP-404", "FAQ Category not found.");
             }
 
-            // Step 3: Create a new FAQCategory type object (FAQCategories) with the provided details.
-            var faqCategory = new FAQCategory
-            {
-                Id = Guid.NewGuid(), // Step 4: Generate a new unique identifier for the FAQCategory entry.
-                Name = request.Name, // Step 5: FAQCategory.Name : request.Name
-                Description = request.Description // Step 6: FAQCategory.Description : request.Description, otherwise leave it null
-            };
+            return result;
+        }
 
-            // Step 7: Save the newly created FAQCategory object to the database.
-            const string sql = "INSERT INTO FAQCategories (Id, Name, Description) VALUES (@Id, @Name, @Description)";
-            try
-            {
-                await _dbConnection.ExecuteAsync(sql, faqCategory);
+        public async Task<string> UpdateFAQCategory(UpdateFAQCategoryDto dto)
+        {
+            ValidateUpdateFAQCategoryDto(dto);
 
-                // Step 8: If the transaction is successful, return response.payload.id = FAQCategory.id
-                return faqCategory.Id.ToString();
+            const string sql = @"
+                UPDATE FAQCategory
+                SET Name = @Name, Description = @Description
+                WHERE Id = @Id;
+            ";
+
+            var rowsAffected = await _dbConnection.ExecuteAsync(sql, new { dto.Id, dto.Name, dto.Description });
+            if (rowsAffected == 0)
+            {
+                throw new BusinessException("DP-404", "FAQ Category not found.");
             }
-            catch (Exception)
+
+            return "FAQ Category updated successfully.";
+        }
+
+        public async Task<bool> DeleteFAQCategory(DeleteFAQCategoryDto dto)
+        {
+            const string sql = @"
+                DELETE FROM FAQCategory
+                WHERE Id = @Id;
+            ";
+
+            var rowsAffected = await _dbConnection.ExecuteAsync(sql, new { dto.Id });
+            return rowsAffected > 0;
+        }
+
+        public async Task<List<FAQCategory>> GetListFAQCategory(ListFAQCategoryRequestDto dto)
+        {
+            var sql = @"
+                SELECT Id, Name, Description
+                FROM FAQCategory
+            ";
+
+            if (!string.IsNullOrEmpty(dto.SortField) && !string.IsNullOrEmpty(dto.SortOrder))
             {
-                // Step 10: If the transaction fails, return response with response.exception = new DP-500 exception
-                throw new TechnicalException("DP-500", "Technical Error");
+                sql += $" ORDER BY {dto.SortField} {dto.SortOrder}";
+            }
+
+            sql += " OFFSET @PageOffset ROWS FETCH NEXT @PageLimit ROWS ONLY";
+
+            var result = await _dbConnection.QueryAsync<FAQCategory>(sql, new { dto.PageOffset, dto.PageLimit });
+            return result.AsList();
+        }
+
+        private void ValidateCreateFAQCategoryDto(CreateFAQCategoryDto dto)
+        {
+            if (string.IsNullOrEmpty(dto.Name))
+            {
+                throw new BusinessException("DP-422", "Name is required.");
+            }
+        }
+
+        private void ValidateUpdateFAQCategoryDto(UpdateFAQCategoryDto dto)
+        {
+            if (dto.Id == Guid.Empty)
+            {
+                throw new BusinessException("DP-422", "Id is required.");
+            }
+
+            if (!string.IsNullOrEmpty(dto.Name) && dto.Name.Length > 255)
+            {
+                throw new BusinessException("DP-422", "Name cannot exceed 255 characters.");
+            }
+
+            if (!string.IsNullOrEmpty(dto.Description) && dto.Description.Length > 1000)
+            {
+                throw new BusinessException("DP-422", "Description cannot exceed 1000 characters.");
             }
         }
     }
